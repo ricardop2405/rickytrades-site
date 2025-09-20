@@ -1,6 +1,6 @@
 // Vercel serverless function — NO API KEY NEEDED (uses public RSS)
 export default async function handler(req, res) {
-  const seller = process.env.EBAY_SELLER || "YOUR_SELLER_NAME";
+  const seller = "rickytradesllc"; // your exact eBay username
   const url = `https://www.ebay.com/sch/i.html?_ssn=${encodeURIComponent(seller)}&_sop=10&_rss=1`;
 
   try {
@@ -14,19 +14,26 @@ export default async function handler(req, res) {
       const block = m[1];
       const pick = (tag) =>
         (block.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`)) || [,""])[1]
-          .replace(/<!\\[CDATA\\[(.*?)\\]\\]>/g, "$1").trim();
+          .replace(/<!\[CDATA\[(.*?)\]\]>/g, "$1").trim();
 
       const title = pick("title");
-      const link = pick("link");
-      const desc = pick("description");
+      const link  = pick("link");
+      const desc  = pick("description");
 
-      const priceMatch = title.match(/\\$\\s?([0-9]+(?:\\.[0-9]{2})?)/);
-      const price = priceMatch ? parseFloat(priceMatch[1]) : 0;
+      // price: try title then description
+      const p1 = title.match(/\$\s?([0-9]+(?:\.[0-9]{2})?)/);
+      const p2 = desc.match(/\$\s?([0-9]+(?:\.[0-9]{2})?)/);
+      const price = p1 ? parseFloat(p1[1]) : p2 ? parseFloat(p2[1]) : 0;
 
-      const imgMatch = desc.match(/<img[^>]+src="([^"]+)"/i);
-      const image = imgMatch ? imgMatch[1] : "";
+      // image: description <img> or media:content
+      const img1 = desc.match(/<img[^>]+src="([^"]+)"/i);
+      const img2 = block.match(/<media:content[^>]+url="([^"]+)"/i);
+      const image = img1 ? img1[1] : img2 ? img2[1] : "";
 
-      items.push({ id: link.split("/itm/")[1] || link, title, price, currency: "USD", image, url: link });
+      items.push({
+        id: (link.split("/itm/")[1] || link).replace(/[^0-9]/g, "") || link,
+        title, price, currency: "USD", image, url: link,
+      });
     }
 
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
