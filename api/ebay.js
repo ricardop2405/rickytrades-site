@@ -30,10 +30,12 @@ export default async function handler(req, res) {
       const link  = pick("link");
       const desc  = pick("description");
 
+      // price: try title then description
       const p1 = title.match(/\$\s?([0-9]+(?:\.[0-9]{2})?)/);
       const p2 = desc.match(/\$\s?([0-9]+(?:\.[0-9]{2})?)/);
       const price = p1 ? parseFloat(p1[1]) : p2 ? parseFloat(p2[1]) : 0;
 
+      // image from description or media tag; else placeholder
       const img1 = desc.match(/<img[^>]+src="([^"]+)"/i);
       const img2 = block.match(/<media:content[^>]+url="([^"]+)"/i);
       const image = img1 ? img1[1] : img2 ? img2[1] : "https://i.ebayimg.com/images/g/0kUAAOSw3Fxj4YbW/s-l500.jpg";
@@ -48,7 +50,7 @@ export default async function handler(req, res) {
 
   try {
     const items = await fetchFirstWithItems();
-    res.setHeader("Cache-Control", "no-store"); // disable cache while testing
+    res.setHeader("Cache-Control", "no-store"); // show changes immediately
     res.status(200).json({ items });
   } catch {
     res.setHeader("Cache-Control", "no-store");
