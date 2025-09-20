@@ -46,7 +46,7 @@ async function load(){
   const msg=document.getElementById('msg');
   msg.textContent='Loading live listings…';
   try{
-    const r=await fetch('/api/ebay');
+    const r=await fetch('/api/ebay?ts=' + Date.now()); // cache-busting query
     const d=await r.json();
     const items=(d&&d.items)||[];
     grid.innerHTML='';
